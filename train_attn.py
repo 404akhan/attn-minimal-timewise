@@ -61,7 +61,7 @@ def play(env, act, stochastic, video_path):
 
         if len(replay_memory) == replay_memory_size: # pop
             replay_memory.pop(0)
-        replay_memory.append(Transition(np.array(obs), action))
+        replay_memory.append(Transition(np.array(obs)[:, :, 2:4], action))
 
         if len(replay_memory) > upd_init_size: # train
             counter += 1
@@ -76,7 +76,7 @@ def play(env, act, stochastic, video_path):
                 if counter % 1000 == 0: attn_net.save_model(counter)
 
         if attn_net_play: # play
-            action = attn_net.action_(np.array(obs))
+            action = attn_net.action_(np.array(obs)[:, :, 2:4])
         obs, rew, done, info = env.step(action)
         reward_sum += rew
         
@@ -90,7 +90,7 @@ def play(env, act, stochastic, video_path):
 
 
 if __name__ == '__main__':
-    gpu_options = tf.GPUOptions(per_process_gpu_memory_fraction=0.333)
+    gpu_options = tf.GPUOptions(per_process_gpu_memory_fraction=0.2)
     tf_config = tf.ConfigProto(
         inter_op_parallelism_threads=8,
         intra_op_parallelism_threads=8,
