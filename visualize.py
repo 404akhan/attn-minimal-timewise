@@ -29,14 +29,15 @@ attn_net = Attn()
 if attn_net.cuda_exist:
     attn_net.cuda()
 
-filename = 'model-torch-2heads/counter_1321000.pth'
+# filename = 'model-torch-2heads-timewise/counter_25000.pth'
+filename = 'model-torch-2heads-timewise-2frames/counter_37000.pth'
 print('==> loading checkpoint {}'.format(filename))
 checkpoint = torch.load(filename, map_location=lambda storage, loc: storage)
 attn_net.load_state_dict(checkpoint)
 print('==> loaded checkpoint {}'.format(filename))
 
-if not os.path.exists('results'):
-    os.makedirs('results')
+if not os.path.exists('results-timewise-2frames'):
+    os.makedirs('results-timewise-2frames')
 
 def parse_args():
     parser = argparse.ArgumentParser("Run an already learned DQN model.")
@@ -44,7 +45,7 @@ def parse_args():
     parser.add_argument("--env", type=str, default='Pong', help="name of the game")
     parser.add_argument("--model-dir", type=str, default='./model-atari-duel-pong-1', help="load model from this directory. ")
     parser.add_argument("--video", type=str, default=None, help="Path to mp4 file where the video of first episode will be recorded.")
-    boolean_flag(parser, "stochastic", default=True, help="whether or not to use stochastic actions according to models eps value")
+    boolean_flag(parser, "stochastic", default=False, help="whether or not to use stochastic actions according to models eps value")
     boolean_flag(parser, "dueling", default=True, help="whether or not to use dueling model")
 
     return parser.parse_args()
@@ -69,7 +70,7 @@ def play(env, act, stochastic, video_path):
 
         if len(replay_memory) == replay_memory_size: # pop
             replay_memory.pop(0)
-        replay_memory.append(Transition(np.array(obs)))
+        replay_memory.append(Transition(np.array(obs)[:, :, 2:4]))
 
         if len(replay_memory) > batch_size and counter_frame > 100: # visualize
             samples = random.sample(replay_memory, batch_size)
@@ -90,7 +91,7 @@ def play(env, act, stochastic, video_path):
 
 
 if __name__ == '__main__':
-    gpu_options = tf.GPUOptions(per_process_gpu_memory_fraction=0.333)
+    gpu_options = tf.GPUOptions(per_process_gpu_memory_fraction=0.2)
     tf_config = tf.ConfigProto(
         inter_op_parallelism_threads=8,
         intra_op_parallelism_threads=8,

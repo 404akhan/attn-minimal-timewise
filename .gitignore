@@ -2,3 +2,7 @@ __pycache__/
 model-atari-duel-pong-1/
 model-torch-2heads/
 results
+model-torch-2heads-timewise-2frames/
+model-torch-2heads-timewise/
+results-timewise-2frames/
+results-timewise-4frames/

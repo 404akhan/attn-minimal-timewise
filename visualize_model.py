@@ -8,6 +8,7 @@ import os
 import matplotlib.pyplot as plt 
 import skimage.transform
 
+
 def selu(x):
     alpha = 1.6732632423543772848170429916717
     scale = 1.0507009873554804934193349852946
@@ -23,7 +24,7 @@ class Attn(nn.Module):
         self.cuda_exist = torch.cuda.is_available()
         print('cuda exist', self.cuda_exist)
 
-        self.conv1 = nn.Conv2d(4, 24, 3, stride=2, padding=1)
+        self.conv1 = nn.Conv2d(1, 24, 3, stride=2, padding=1)
         self.batchNorm1 = nn.BatchNorm2d(24)
         self.conv2 = nn.Conv2d(24, 24, 3, stride=2, padding=1)
         self.batchNorm2 = nn.BatchNorm2d(24)
@@ -37,7 +38,8 @@ class Attn(nn.Module):
         self.w2 = nn.ModuleList([nn.Linear(256, 256) for _ in range(self.num_heads)])
         self.w3 = nn.ModuleList([nn.Linear(256, 1) for _ in range(self.num_heads)])
 
-        self.f_fc1 = nn.Linear(26 * self.num_heads, 256)
+        self.num_frames = 2
+        self.f_fc1 = nn.Linear(26 * self.num_heads * self.num_frames, 256)
         self.f_fc2 = nn.Linear(256, 256)
         self.f_fc3 = nn.Linear(256, 6)
         
@@ -53,9 +55,9 @@ class Attn(nn.Module):
             np_coord_tensor[:,i,:] = np.array(self.cvt_coord(i))
         self.coord_tensor.data.copy_(torch.from_numpy(np_coord_tensor))
 
-        print('two heads')
         self.plot_num = 0
         self.total_plot = 100
+        print('Pong, timewise attention, num of heads {}, num of frames {}'.format(self.num_heads, self.num_frames))
 
 
     def cvt_coord(self, i):
@@ -63,8 +65,9 @@ class Attn(nn.Module):
 
         
     def visual_pass(self, img):
+        img_single = img[:, -1:, :, :]
         """convolution"""
-        x = self.conv1(img)
+        x = self.conv1(img_single)
         x = F.relu(x)
         x = self.batchNorm1(x)
         x = self.conv2(x)
@@ -104,7 +107,7 @@ class Attn(nn.Module):
 
         prob_summ /= self.num_heads
 
-        img_plt = img[0].permute(1, 2, 0).data.numpy()
+        img_plt = img_single[0].permute(1, 2, 0).data.numpy()
         img_plt = np.mean(img_plt, axis=2, keepdims=False) # average four frames
         prob_vis = skimage.transform.pyramid_expand(prob_summ, upscale=14)
 
@@ -124,7 +127,7 @@ class Attn(nn.Module):
         axx_arr[1, 1].imshow(prob_summ, cmap='gray')
         plt.tight_layout()
 
-        f.savefig('results/attention'+str(self.plot_num))
+        f.savefig('results-timewise-2frames/attention'+str(self.plot_num))
         plt.close()
         ### end plotting
         
